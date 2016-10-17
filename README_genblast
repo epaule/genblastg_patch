@@ -1,0 +1,271 @@
+/*********************************README*******************************/
+
+GENBLAST PACKAGE
+
+
+Maintained by: 
+
+Rong She		
+School of Computing Science
+Simon Fraser University
+(Nov. 2010)
+
+/**********************************************************************/
+
+1. FUNCTIONALITY
+
+GenBlast is a package that consists of two programs: genBlastA and genBlastG.
+Given a list of query protein sequences and a target DNA database (that contains
+a list of DNA sequences of certain species) as input, genBlastA produces a ranked
+list of HSP groups for each query, where each group corresponds to a candidate
+target gene that is homologous to the query. The program genBlastG is further 
+based on genBlastA results and gives the gene structure (positions of protein-coding
+exons and introns) for each candidate target gene. Thus the genBlast package is 
+a computational gene prediction program that is based on protein homology.
+
+In particular, there are three main steps in genBlast: (1) using BLAST/WuBLAST tool 
+to find HSPs between the query protein and the target genome, (2) using genBlastA 
+program [1] to produce HSP groups where each group corresponds to a candidate gene,
+(3) using the genBlastG program that is built on top of the genBlastA results and 
+gives the exact gene structures. The list of potential genes in the genBlast output
+is given in the same order as in the genBlastA program (as per an internal scoring 
+system), which more or less corresponds to the extent of homology to the query.
+
+2. INSTALLATION
+
+Currently genBlast has been confirmed to work on the following platforms:
+
+- Linux-2.6-i686 (32 bit)
+- Linux-CentOS-x86-64 (64 bit)
+- Mac OS X 10.5
+
+For each platform, a binary file of genBlast has been compiled and packaged with 
+Blast, which can be downloaded from (~genBlast web page~). Please use these 
+binaries only on its intended platform, since different operating systems / 
+processor architectures have various differences when executing the same code.
+
+To install genBlast, unzip the corresponding genBlast package into a new, empty 
+directory. This release includes Blast binaries so that the user can run blast 
+and perform genBlast predictions all at once. Note that the current version of 
+genBlast is tested on/packaged with legacy Blast.
+
+2.1. SETTING PERMISSION
+
+Please make sure that the permissions of all files are set to be executable. 
+This can be done by using the "chmod" command on the command line:
+
+chmod -R 'u+x' *
+
+2.2. SETTING ENVIRONMENT VARIABLE
+
+The simplest way to run genBlast is to run it from the directory where all 
+executables are located. However, if the user chooses to run genBlast from other 
+directory, (e.g. by adding the genBlast directory to the PATH environment 
+variable,) an additional GBLAST_PATH environment variable must also be set to 
+point to the genBlast directory. For example, if the genBlast package is at 
+/usr/bin/genblast, and the user wants to run genBlast from any other 
+directory, the user should set GBLAST_PATH to be /usr/bin/genblast. 
+This can be done at the command line before running the genblast command.
+
+Commands for setting environment variables are different based on the 
+operating system and the shell used. An example for setting it on C Shell in 
+Unix/Linux is:
+
+setenv GBLAST_PATH "/usr/bin/genblast"
+- Sets the environment GBLAST_PATH path to /usr/bin/genblast directory.
+
+For details on how to set environment variables, please refer to your Unix/Linux 
+manual.
+
+3. USAGE
+
+This program is currently designed to be run from the command line. This release 
+also includes Blast binaries so that the user only needs to run a single 
+command. Blast is the default search program used by genBlast. However, the user 
+may also use WuBlast instead of Blast by specifying the "-P" option, provided that 
+the user also has the WuBlast binaries present. See 3.3 for details.
+
+3.1. SPECIFYING THE PROGRAM OPTION
+
+-p	(lower case "p") Specifies which program will be run. Use "-p genblasta" 
+to run genBlast until the step of genBlastA (without resolving gene structures); 
+use "-p genblastg" to run genBlastG (so all three steps will be run).
+
+3.2. REQUIRED INPUT FILES
+
+The user needs to supply a query file that contains a list of 
+query protein sequences, and a target file that contains the target DNA 
+sequences to be blasted. All sequences should be in FASTA format.
+
+A sample query file and target file have been included in the package:
+- query: "seqList.txt"
+- target: "elegans.WS170.dna.fa"
+
+Both query and target files are in plain text format (FASTA sequences), with any 
+filename and/or extension. Both the query and the target file may contain 
+multiple sequences. Each query sequence will be blasted against all target 
+sequences. The result for all query sequences will be in the same output file, 
+in the same order as their order in the query file.
+
+To specify the query filename, use "-q" option:
+-q seqList.txt
+
+To specify the target filename, use "-t" option:
+-t elegans.WS170.dna.fa
+
+In addition, the "alignscore.txt" file is required to run genBlastG. It contains 
+the scores for each aligned pair of amino acids. A "alignscore.txt" file is currently
+supplied with the genBlast package. It is based on BLOSUM62 score matrix. It is 
+possible to use other scoring system. (~will add other scoring files later?~)
+
+3.3. OPTIONAL PARAMETERS
+
+There are following optional command line parameters, which are described as 
+follows (case sensitive):
+
+-P	(CAPITAL letter "P") Which program is used to generate sequence alignments 
+	between query sequence and the target database. It can be either "wublast" or 
+	"blast". If not specified, it's defaulted to "blast". When using "wublast",
+	the appropriate version of Blast binaries must be present in the same directory 
+	as genBlastG.
+
+-e	The e-value. It is a parameter for running Blast/WuBlast, if not specified, the 
+default value is set at 1e-2. 
+
+-g	Perform gapped alignment. It is also a parameter for running Blast/WuBlast. Its 
+value should be "T" or "F". If not specified, it's defaulted to "F". (In general, "F"  
+may be better when query is from a genome that is identical/very close to target genome;
+ "T" may be better when query/target genome is not so close.)
+
+-f	Perform filtering. Also a parameter for Blast/WuBlast (T/F). If not specified, 
+default value is "F".
+
+-W	Set word size for Blast/WuBlast run. If the value is 0, default Blast/WuBlast 
+word size is used. If not specified, default value is 0.
+
+-a	Weight of penalty for skipping HSPs in a HSP group. A genBlastA-specific 
+parameter. Its value is between 0 and 1. If not specified, default is 0.5. This 
+weight is relative to the penalty for missing gene coverage in a HSP group, with 
+the sum of both weights to be 1. See reference [1] for details on "HSP group".
+
+-d	Maximum allowed distance between HSPs within the same HSP group. A genBlastA-
+specific parameter. Its value should be a non-negative integer. If not 
+specified, default is 100000.
+
+-c	Minimum percentage of query gene coverage of the HSP group in the output. In 
+float point format, with the value between 0 and 1, e.g. in order to restrict 
+the output to HSP groups that cover at least 50% of query gene, use "-c 0.5". If 
+not specified, HSP groups with all query coverage will be outputted.
+
+-s	Minimum score of the HSP group in the output. In float point format, can be 
+any real number. If not specified, HSP groups with any score will be outputted.
+
+-r	The number of ranks in genBlast output. Its value should be a positive integer.
+If not specified, genes of all ranks will be outputted.
+
+-scodon	The number of base pairs to search for start codon within the region of HSP 
+group (inside the first HSP). If not specified, default is 15.
+
+-i	A genBlastG-specific parameter. Minimum intron length. A positive integer. 
+If not specified, the default value is 15.
+
+-x	A genBlastG-specific parameter. Minimum internal exon length. A positive integer. 
+If not specified, default is 20.
+
+-n	A genBlastG-specific parameter. Maximum number of splice sites per splice region. 
+A positive integer. If not specified, default value is 20.
+
+-v	The version of genBlastG splice region detection algorithm: 1 or 2. If not 
+specified, default is 1.
+
+-h	Parameter used by genBlastG splice region detection algorithm 2(S2): data shift, 
+the value by which to change the score of each aligned amino acid pair in the HSPs. Can be 
+positive or negative integer. If not specified, the default value is 0.
+
+-j	Parameter used by genBlastG splice region detection algorithm 2(S2): class threshold, 
+the value at which to separate the exon class from the intron class in S2. Can be positive 
+or negative integer. If not specified, the default value is 0.
+
+-norepair	If this option is specified, the post-processing step in genBlastG will be 
+turned off, i.e. there is no post processing.
+
+-re	parameter used for genBlastG post-processing step (if "-norepair" option is not 
+turned on): minimum length of missing query region (before first exon or after last exon) when 
+further repair (post-processing) is needed. If not specified, default is 1.
+
+-rm	parameter used for genBlastG post-processing step (if "-norepair" option is not 
+turned on): minimum length of missing query region between internal exons when further repair is 
+needed. If not specified, default is 6.
+
+-rl	parameter used for genBlastG post-processing step (if "-norepair" option is not 
+turned on): the length of DNA region before first exon or after last exon for searching for 
+additional local alignments for repairing exons. If not specified, default is 1000.
+
+-rs	parameter used for genBlastG post-processing step (if "-norepair" option is not 
+turned on): minimum initial score of an local alignment to be considered further. The idea of this 
+parameter is similar to the one used in BLAST. If not specified, default is 41.
+
+-rd	parameter used for genBlastG post-processing step (if "-norepair" option is not 
+turned on): maximum allowed score reduction in extending initial alignment (similar to BLAST). If 
+not specified, default is 16.
+
+
+-o	Output filename. If not specified, the output file will have the same name 
+as the query filename, except with ".gblast" extension.
+
+-gff	output options: turn on GFF output. A ".gff" file will be produced.
+
+-cdna	output options: turn on cDNA output. A ".DNA" file will be produced.
+
+-pro	output options: output protein sequence of the predicted gene. A ".pro" file 
+will be produced.
+
+-id	used in connection with "-gff" option: a user id in ".gff" file to identify the program source.
+
+-b	turn on the verbose on-screen output.
+
+-pid	turn on final alignment PID computation (global alignment between predicted gene and query) in output.
+
+
+--------------------------------------------------------------------------
+Example of genBlast command:
+
+(1) run genBlastA with all default settings
+genblast -p genblasta -q myquery -t mytarget
+
+(2) run genBlastG with non-default settings:
+genblast -p genblastg -P wublast -q myquery -t mytarget -e 10 -g F -f T -a 0.25 -d 200000 -r 10 
+-c 0.5 -s 0 -i 20 -x 25 -n 30 -v 2 -h -3 -j 0 -norepair -o myoutput -gff -id 58 -cdna -pro
+
+--------------------------------------------------------------------------
+
+Note that the options "-r", "-c", "-s" are only used to restrict the number of 
+potential homologous genes in the output. However, no matter how these options 
+are specified, there will be at least one gene predicted (the top-ranked one).
+
+
+3.3. BRIEF COMMAND LINE HELP
+
+For a brief description of all command line options, simply type the following 
+command on the command line:
+
+genblast
+
+
+/**********************************************************************/
+
+genBlast will produce some intermediate files during its processing, including 
+three database index files that are used by Blast/WuBlast, the ".blast" or 
+".wublast" result from Blast/WuBlast output, a ".report" file that is parsed 
+from the Blast/WuBlast result. The final output file is the one specified by 
+the user, or if not specified, the file with ".gblast" extension. In addition, 
+if the user specifies the output options "-gff", "-cdna", or "-pro", each will 
+be output to its own file with ".gff", ".DNA", ".pro" extension, respectively.
+
+/**********************************************************************/
+
+References:
+[1] genBlastA: Enabling BLAST to identify homologous gene sequences
+Rong She, Jeffrey S.C. Chu, Ke Wang, Jian Pei and Nansheng Chen. 
+Genome Research 2009. 19: 143-149.
+

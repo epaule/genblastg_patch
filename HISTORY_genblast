@@ -1,0 +1,192 @@
+/******************************************/
+GenBlast Package Release CHANGELOG
+/******************************************/
+
+V101: Changes from genBlastG_070209: (July 3, 2009)
+- change the program name to genBlast and integrate genBlastA and genBlastG into the "-p" option in genBlast;
+- update README accordingly;
+
+V102:
+- typo fixed;
+
+V103: (Aug. 9, 2009)
+- added: check for existing "*.wublast" or "*.wublast.report" file 
+("*" is the concatenation of query filename and target filename), 
+if they already exist, then skip wublast or report-creating step;
+- fixed: wublast format file parsing fixed (to parse wublast result for one query);
+
+V104:
+- input pathname fixed;
+
+V105:
+- problem with multi-line query gene name in wublast file fixed;
+
+V106:
+- problem with empty list of HSP in multi-query wublast file fixed;
+- output ID naming duplicates problem fixed;
+
+V107:
+- fixed problem with empty target string when extending alignment during exon-repairing;
+
+V108: (Aug. 14, 2009)
+- fixed gff output so gene start/end is the same as exons after repair;
+- make sure gff exons always start from smaller coordinate;
+- fixed output rank counting;
+
+V109:
+- fixed problem with heading/trailing stop codon in alignments after overlap resolving
+
+V110:
+- outputs for -norepair option updated
+
+V111:
+- some more tweaks to the algorithm:
+* for "no-intron" case, the donor-side and acceptor-side HSPs use the same as the current 
+top-ranked pair of donor-acceptor
+* if there's in-frame stop within HSP, always make that an intron region
+* if two neighboring HSPs (after overlap resolving) are not in same frame, always assume 
+the region between is intron region
+* when computing exons for each intron region, only consider "no-intron" case when there's
+no in-frame stop in the region, also when the donor-side and acceptor-side HSPs are in 
+same frame
+* if the last exon was cut off by a stop codon, do HSP adjustments: from the stop codon 
+site, check the HSP at its left side and HSP at its right side, and remove the HSP that 
+has lower identity. Then re-compute the intron regions according to the new set of HSPs 
+and re-compute introns for each intron regions and so on.
+- further modifications:
+* For last exon, if there's a second-to-last exon, try extend that exon to its next stop.
+Compute the global alignment between this newly-deduced gene (with the original second-to-
+last exon as the last exon) and the query. Compare its PID with the global alignment 
+between the gene in previous method (with repair etc.) and the query. Choose the one with 
+higher PID as the final prediction.
+- A bug fix:
+Input function that reads the input target DNA database was fixed, so that now very long 
+lines in the input file can be read correctly.
+
+V112:
+- fixed a bug for "newHSP" to extend beyond its left/right limit during repairing mid exons 
+by adjusting the limits to be in frame
+- for intron regions between two HSPs that have in-frame stop codon in between, also check 
+the "no-intron" case, if its PID is the highest, then do the removeHSP stuff immediately 
+before trying to recompute intron regions and exons
+- if the initial prediction contains a single exon, treat it the same as multi-exon case, 
+with RepairHeadExon and RepairTailExon one at a time (not trying to repair at both ends at 
+the same time)
+- reduce alternatives: 
+(1) change GlobalAlignment to maximize score instead of PID; 
+(2) change the alignment ranking measure to first score then PID (instead of PID alone);
+All comparisions between alignments are now done by comparing score then PID.
+(3) if local HSP-based spliced sequence alignments result to multiple same highest ranks 
+(alternatives with same score and PID), then check optimal alignment betweent the spliced 
+sequence and corresponding query segment, select the one with highest score then PID.
+* NOTE the global PID computation is changed, so it now seeks the alignment that maximizes 
+score and the resulting PID may be slightly lower.
+
+v113:
+- "reduce alternatives" modified (change the alignment comparison again):
+(1) alignment aims to maximize PID
+(2) compare alignments by PID first, then BLOSUM62 score
+- added additional line of output in raw output
+"Gene:ID=gff_gene_id|gene start-gene end|strand|rank|score|PID"
+
+v114:
+- cosmetic fix for the final "Gene:ID" line in raw output
+
+v115:
+- fixed a bug in computing optimal alignment in each intron region (when there're more than 
+one alternative donor-acceptor pairs in an intron region that have the same top rank), to 
+consider the case of "no-intron"
+- updated help function to specify ungapped setting as default
+
+v116:
+- bug fix, actually use PID before alignment_score to compare alignments (misplaced header)
+
+v117:
+- update/clean up output
+
+v118:
+- update output, add "NEW EXON..." lines to report novel exons not based on BLAST HSPs
+
+v119:
+- bug fix, adjust len in GetSubstrFromVecStrs_*_ForRepair for short sequence
+
+v120:
+- output additional info on 3' exon repair (alignment and PID for each of the 3 options: 
+(1)initial end exon; (2) extended end exon; (3) second-to-last exon as end)
+
+v121:
+- in genBlastG, for each query gene, load one chromosome at a time and process all groups 
+on that chromosome only, then move on to the next chromosome (to be able to handle larger 
+genomes that can't fit into memory), assume memory is large enough to comfortably hold 
+any single chromosome (largest human chromosome is about 250M)
+
+v122:
+- update genBlast to include parsing for both wuBlast and Blast, enabling the "-P" option
+- update output PID and coverage numbers to up to 2 digits after decimal point
+
+v123:
+- modify parsing of wublast/blast output to get proper database sequence name from ">" line
+- add sequence name checking to verify sequence input is properly done, instead of giving 
+exception later
+
+v124:
+- fix bug in finding(extending) alignment during repair process, for small contigs where 
+there is not enough base pair left in sequence, to ensure in-frame translation
+- minor correction on output format, to get proper final_start_site/final_end_site when 
+gff option is not enabled
+
+v125:
+- change DNA sequence loading to loading all DNA regions (for all groups in the same gene) 
+at once, in order to speed up some
+
+v126:
+- add the file position index data structure to speed up sequence scanning process
+
+v127:
+- a bug fix, to compute in-frame extension length on DNA sequence for head/tail exon repair
+
+v128:
+- a bug fix, make sure there's enough base pairs left on DNA sequence when examining 
+acceptors/donors for possible internal exons, in "PostProcessSpliceSites"
+
+v129:
+- add "-pid" option, for global alignment PID computation (global alignment between query 
+and prediction), now, by default it is off.
+
+v130:
+- add "-scodon" option, to allow searching for start codon inside HSP region (from first 
+HSP, search downstream) up to certain number of base pairs, default is 15.
+- change gene end site to include the stop codon at the end.
+
+v131:
+- bug fix, update the utility function HasInFrameStop to avoid failing last exon due to 
+included stop codon at the end.
+
+v132:
+- bug fix, check fgets return value when reading chromosomes to ensure something is read
+
+v133:
+- fixed a PID-reporting format issue in gff output
+
+v134:
+- In the merging process, remove HSPs that are properly contained in other HSPs 
+(resulted from previous rounds of merging)
+
+v135:
+- minor bug fix in gff and cDNA output format
+
+v136:
+- bug fix, in repair mode, after removing HSPs, make sure start_site does not come after end_site
+- reset "-P" option to use "blast" as the default search program
+
+v137:
+- silence g++ compile warnings by explicit type cast and replace string::npos with -1
+- add macro for Mac portability (for large file operations)
+
+v138:
+- add "-W" option to allow user setting on Blast/WuBlast -W option (set word size).
+- clean up gBlast.cpp for esthetics reason
+
+v139
+- Changed all 'endl' to "\n" to prevent short writes.
+
